@@ -25,6 +25,22 @@ Teniendo en cuenta los conceptos vistos de condición de carrera y sincronizaci�
 - La búsqueda distribuida se detenga (deje de buscar en las listas negras restantes) y retorne la respuesta apenas, en su conjunto, los hilos hayan detectado el número de ocurrencias requerido que determina si un host es confiable o no (_BLACK_LIST_ALARM_COUNT_).
 - Lo anterior, garantizando que no se den condiciones de carrera.
 
+Los códigos modificados se encuentran organizados en la carpeta [BlackList](src/main/java/edu/eci/arsw/BlackList)
+
+---
+---
+**Respuesta:**
+los puntos clave para convertir este código a una implementación más robusta:
+
+- No se generan locks pesados: `AtomicInteger` usa operaciones a nivel de hardware (CAS), mucho más barato que `synchronized` para un contador simple, así que se selecciona como la mejor implementación.
+- Sin condición de carrera: `incrementAndGet()` es atómico; ningún incremento se pierde.
+- Listas de resultados por hilo: cada `blackListOcurrences` es privada del hilo, se combinan solo después de `join()`, así que no hay necesidad de sincronizar esa colección.
+- Detención más ágil: la interrupción hace que los hilos que siguen en su bucle salgan casi de inmediato, en vez de esperar a que terminen su rango completo o revisen la condición por su cuenta.
+- Se generó un lambda de filtro en el main para obtener un output igual al de la respuesta original, con el fin de estar en un resultado lo más cercano posible al problema original.
+
+---
+---
+
 ##### Parte III. – Avance para el martes, antes de clase.
 
 Sincronización y Dead-Locks.
