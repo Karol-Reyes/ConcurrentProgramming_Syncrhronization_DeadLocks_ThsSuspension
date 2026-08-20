@@ -88,30 +88,47 @@ public class ControlFrame extends JFrame {
         btnPauseAndCheck.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
 
-                /*
-				 * COMPLETAR
-                 */
+                //pausar los hilos
+                for (Immortal im : immortals) {
+                    im.pauseImmortal();
+                }
+
+                //esperar a que todos los hilos estén pausados
+                boolean allPaused = false;
+                long deadline = System.currentTimeMillis() + 2000; // 2 segundos de espera
+                while (!allPaused && System.currentTimeMillis() < deadline) {
+                    allPaused = true;
+                    for (Immortal im : immortals) {
+                        if (!im.pausedAndWaiting()) {
+                            allPaused = false;
+                            break;
+                        }
+                    }
+                    if (!allPaused) {
+                        try {
+                            Thread.sleep(1);
+                        } catch (InterruptedException ex) {
+                            Thread.currentThread().interrupt();
+                        }
+                    }
+                }
+
+                //imprimir porque nadie mas está modificando
                 int sum = 0;
                 for (Immortal im : immortals) {
                     sum += im.getHealth();
                 }
-
                 statisticsLabel.setText("<html>"+immortals.toString()+"<br>Health sum:"+ sum);
-                
-                
-
             }
         });
         toolBar.add(btnPauseAndCheck);
 
         JButton btnResume = new JButton("Resume");
-
         btnResume.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                /**
-                 * IMPLEMENTAR
-                 */
-
+                for (Immortal im : immortals) {
+                    im.resumeImmortal();
+                }
             }
         });
 
