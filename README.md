@@ -32,11 +32,11 @@ Los códigos modificados se encuentran organizados en la carpeta [BlackList](src
 **Respuesta:**
 los puntos clave para convertir este código a una implementación más robusta:
 
-- No se generan locks pesados: `AtomicInteger` usa operaciones a nivel de hardware (CAS), mucho más barato que `synchronized` para un contador simple, así que se selecciona como la mejor implementación.
-- Sin condición de carrera: `incrementAndGet()` es atómico; ningún incremento se pierde.
-- Listas de resultados por hilo: cada `blackListOcurrences` es privada del hilo, se combinan solo después de `join()`, así que no hay necesidad de sincronizar esa colección.
+- No se generan locks pesados: ```AtomicInteger``` usa operaciones a nivel de hardware (CAS), mucho más barato que ```synchronized``` para un contador simple, así que se selecciona como la mejor implementación.
+- Sin condición de carrera: ```incrementAndGet()``` es atómico; ningún incremento se pierde.
+- Listas de resultados por hilo: cada ```blackListOcurrences``` es privada del hilo, se combinan solo después de ```join()```, así que no hay necesidad de sincronizar esa colección.
 - Detención más ágil: la interrupción hace que los hilos que siguen en su bucle salgan casi de inmediato, en vez de esperar a que terminen su rango completo o revisen la condición por su cuenta.
-- Se generó un lambda de filtro en el main para obtener un output igual al de la respuesta original, con el fin de estar en un resultado lo más cercano posible al problema original.
+- Se generó un lambda de filtro en el main para obtener un output igual al de la respuesta original, con el fin de estar en un resultado lo más cercano posible a la espera inicial.
 
 ---
 ---
