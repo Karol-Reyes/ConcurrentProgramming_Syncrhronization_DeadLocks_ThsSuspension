@@ -144,3 +144,66 @@ Al hacer clic repetidamente en "Pause and check" observamos dos problemas import
 2. **El programa eventualmente se detiene por completo (deadlock):** Een ese momento "Pause and check" queda colgado indefinidamente. Esto sucede cuando dos inmortales se atacan mutuamente al mismo tiempo (im0 ataca a im1 mientras im1 ataca a im0): cada hilo, dentro de ```fight()```, toma su propio lock (```this```) y luego intenta tomar el lock del rival (```i2```) para leer/modificar su salud. Si ambos hilos alcanzan a tomar su propio lock antes de intentar tomar el del otro, quedan esperándose mutuamente para siempre. Cuando esto ocurre, los hilos bloqueados nunca regresan al ciclo ```while(true)``` de ```run()```, por lo que nunca llegan al punto de revisión de pausa (```checkPaused()```), y el botón "Pause and check" (que espera a que todos los hilos confirmen que están pausados) se queda esperando sin éxito.
 
 Con esto en mente, la implementación de pausa/resume del punto 4 es funcionalmente correcta en la lógica de ```wait()```/```notify()```, pero no es suficiente para garantizar ni verificar el invariante, porque el problema de fondo está en ```fight()```: una región crítica sin sincronización adecuada (que causa la condición de carrera) y, al intentar corregirla con locks simples, un riesgo latente de deadlock por adquisición de locks en orden inconsistente entre hilos que se atacan mutuamente.
+
+## 6.
+
+### Problemas encontrados
+
+La región crítica de una pelea incluye la lectura de la salud del contrincante, la reducción de su salud y el aumento de la salud del atacante. Estas operaciones deben ejecutarse como una sola unidad, porque la salud total debe conservarse.
+
+Sin sincronización, dos hilos pueden leer el mismo valor de salud y sobrescribir los cambios del otro, provocando una condición de carrera y perdiendo una actualización. Sin embargo, sincronizar únicamente `fight()` sobre `this` tampoco es suficiente: una pelea modifica dos objetos (`this` e `i2`). Además, si dos inmortales se atacan mutuamente, cada hilo puede tomar primero el lock de su propio objeto y quedar esperando el lock del otro. Esto produce un deadlock.
+
+### Estrategia de bloqueo
+
+Se utilizaron los propios objetos `Immortal` como locks, pero se estableció un orden global para adquirirlos. Como los nombres son únicos (`im0`, `im1`, etc.), antes de entrar a la región crítica se organizan los dos inmortales por nombre:
+
+```
+Immortal first = this;
+Immortal second = i2;
+
+if (first.name.compareTo(second.name) > 0) {
+    first = i2;
+    second = this;
+}
+```
+
+Después se adquieren siempre en ese orden:
+
+```
+synchronized (first) {
+    synchronized (second) {
+        if (i2.health > 0) {
+            i2.health -= defaultDamageValue;
+            this.health += defaultDamageValue;
+        }
+    }
+}
+```
+
+De esta manera, la lectura y modificación de las dos vidas quedan protegidas por los mismos locks. Si dos peleas comparten un inmortal, una espera correctamente a que termine la otra. Si no comparten inmortales, pueden ejecutarse simultáneamente, por lo que no se convierte toda la simulación en una única sección crítica.
+
+El orden global evita el deadlock porque no puede existir una espera circular: todas las peleas que necesiten los mismos dos locks los solicitan en el mismo orden. Por ejemplo, tanto si `im0` ataca a `im1` como si `im1` ataca a `im0`, primero se bloquea `im0` y después `im1`.
+
+Finalmente, el reporte se construye mientras ambos locks están adquiridos, pero se envía al callback después de liberarlos. Así se reduce el tiempo durante el cual los locks permanecen ocupados.
+
+## 7. Verificación con `jps` y `jstack`
+
+Al ejecutar el programa, no se observó que la aplicación se bloqueara ni que dejara de responder. Para comprobar el estado de los hilos se utilizó el comando `jps -l`, con el que se identificó el proceso de `ControlFrame` y su PID. Después se ejecutó:
+
+```
+jstack -l PID > thread-dump.txt
+```
+
+![alt text](image.png)
+
+El archivo generado y leido con ayuda de una Inteligencia Artificial se revisó buscando mensajes como `Found one Java-level deadlock`, `BLOCKED` y `waiting to lock`. No se encontró ningún deadlock. Los hilos `im0` e `im1` aparecieron en estado `TIMED_WAITING`, detenidos temporalmente en `Thread.sleep(1)` dentro de `Immortal.run()`. Esto corresponde al funcionamiento normal de la simulación y no a un bloqueo entre locks.
+
+Por lo tanto, en esta ejecución la aplicación nunca se bloqueó y el análisis con `jstack` confirmó lo observado visualmente. La IA ayudó a generar el archivo de volcado y a interpretar sus estados y mensajes, pero la evidencia corresponde a la ejecución real del programa y al resultado obtenido mediante `jps` y `jstack`.
+
+![alt text](image-1.png)
+
+## 8. Corrección del problema identificado
+
+En la ejecución realizada no se presentó ningún deadlock ni bloqueo de la aplicación. El análisis del archivo generado con `jstack` confirmó que los hilos continuaban funcionando normalmente y que su estado `TIMED_WAITING` se debía únicamente al `Thread.sleep(1)` de la simulación.
+
+Por esta razón, en este punto no fue necesario aplicar una corrección adicional. La estrategia de adquirir los locks en un orden global ya estaba implementada y permitió que la simulación continuara ejecutándose sin una espera circular. Por el momento no se identificó ningún problema adicional que reparar.

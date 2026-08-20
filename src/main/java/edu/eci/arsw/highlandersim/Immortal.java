@@ -91,16 +91,28 @@ public class Immortal extends Thread {
         }
     }
 
-    public synchronized void fight(Immortal i2) {
+    public void fight(Immortal i2) {
+        Immortal first = this;
+        Immortal second = i2;
 
-        if (i2.getHealth() > 0) {
-            i2.changeHealth(i2.getHealth() - defaultDamageValue);
-            this.health += defaultDamageValue;
-            updateCallback.processReport("Fight: " + this + " vs " + i2+"\n");
-        } else {
-            updateCallback.processReport(this + " says:" + i2 + " is already dead!\n");
+        if (first.name.compareTo(second.name) > 0) {
+            first = i2;
+            second = this;
         }
 
+        String report;
+        synchronized (first) {
+            synchronized (second) {
+                if (i2.health > 0) {
+                    i2.health -= defaultDamageValue;
+                    this.health += defaultDamageValue;
+                    report = "Fight: " + this + " vs " + i2 + "\n";
+                } else {
+                    report = this + " says:" + i2 + " is already dead!\n";
+                }
+            }
+        }
+        updateCallback.processReport(report);
     }
 
     public synchronized void changeHealth(int v) {
