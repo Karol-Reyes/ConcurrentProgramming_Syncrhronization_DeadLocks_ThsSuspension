@@ -5,7 +5,7 @@
 
 ## Parte I
 
-![alt text](jVisual.png)
+![alt text](/imagenes/jVisual.png)
 
 **1.** Este consumo aunque no esta tan alto, se podria ver en la clase `Consumer`, ya que a pesar de que el productor agrega un elemento cada segundo, esta clase esta ejecutando todo el tiempo:
 
@@ -22,7 +22,7 @@ while (true) {
 
 Por lo que si la cola esta vaia, el consumidor de todas maneras seguira preguntando sin parar.
 
-![alt text](image.png)
+![alt text](/imagenes/image.png)
 
 **2.** para hacer mas eficiente, lo que hacemos es implementar `synchronized` en ambas clases, la de productor y la del consumidor.
 
@@ -30,7 +30,7 @@ Primero, en la clase `Consumer` la condición de espera estara dentro de un whil
 
 Ahora, para el productor, cuando este cree un elemento, debe agregarlo y notificar al consumidor usando queue, por lo que bloquea queue mientras agrega dico elemento. Ahi llama a `notifyAll()` para despertar al consumidor y liberar la cola.
 
-![alt text](image-1.png)
+![alt text](/imagenes/image-1.png)
 
 Como vemos el consumo de cpu bajo considerablemente, incluso hubo momentos donde registraba 0.0% - 0.1%.
 
@@ -50,6 +50,6 @@ En la clase `Consumer` usamos `take()` para retirar los elementos. Este metodo b
 
 Con estos cambios, el productor llena rapidamente la cola hasta alcanzar los 10 elementos y luego espera. El consumidor retira un elemento cada segundo, permitiendo que el productor continue solamente cuando se libera un espacio. Al ejecutar la aplicacion y observarla en jVisualVM, se debe verificar que la cola no supere el limite y que no se presente un consumo alto de CPU, ya que ambos hilos quedan bloqueados cuando no pueden continuar.
 
-![alt text](image-2.png)
+![alt text](/imagenes/image-2.png)
 
 Como se puede ver, el uso de CPU no aumento casi llegando maximo a picos de 1.9%, por lo que no gasta tanta CPU ni hubo ningun error durante el proceso.
