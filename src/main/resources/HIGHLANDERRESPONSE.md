@@ -194,13 +194,13 @@ Al ejecutar el programa, no se observó que la aplicación se bloqueara ni que d
 jstack -l PID > thread-dump.txt
 ```
 
-![alt text](image.png)
+![alt text](/imagenes/comand.png)
 
 El archivo generado y leido con ayuda de una Inteligencia Artificial se revisó buscando mensajes como `Found one Java-level deadlock`, `BLOCKED` y `waiting to lock`. No se encontró ningún deadlock. Los hilos `im0` e `im1` aparecieron en estado `TIMED_WAITING`, detenidos temporalmente en `Thread.sleep(1)` dentro de `Immortal.run()`. Esto corresponde al funcionamiento normal de la simulación y no a un bloqueo entre locks.
 
 Por lo tanto, en esta ejecución la aplicación nunca se bloqueó y el análisis con `jstack` confirmó lo observado visualmente. La IA ayudó a generar el archivo de volcado y a interpretar sus estados y mensajes, pero la evidencia corresponde a la ejecución real del programa y al resultado obtenido mediante `jps` y `jstack`.
 
-![alt text](image-1.png)
+![alt text](/imagenes/100.png)
 
 ## 8. Corrección del problema identificado
 
