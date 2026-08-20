@@ -2,6 +2,10 @@
 ## Escuela Colombiana de Ingeniería
 ### Arquitecturas de Software – ARSW
 
+### integrantes:
+### Karol Ximena Rodriguez
+### Juan David Moreno D'Aleman
+
 
 #### Ejercicio – programación concurrente, condiciones de carrera y sincronización de hilos. EJERCICIO INDIVIDUAL O EN PAREJAS.
 
