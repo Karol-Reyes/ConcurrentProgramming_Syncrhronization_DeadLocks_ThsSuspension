@@ -2,8 +2,8 @@ package edu.eci.arsw.highlandersim;
 
 import java.awt.BorderLayout;
 import java.awt.EventQueue;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import javax.swing.JFrame;
 import javax.swing.JPanel;
@@ -29,7 +29,7 @@ public class ControlFrame extends JFrame {
 
     private JPanel contentPane;
 
-    private List<Immortal> immortals;
+    private Queue<Immortal> immortals;
 
     private JTextArea output;
     private JLabel statisticsLabel;
@@ -159,14 +159,14 @@ public class ControlFrame extends JFrame {
 
     }
 
-    public List<Immortal> setupInmortals() {
+    public Queue<Immortal> setupInmortals() {
 
         ImmortalUpdateReportCallback ucb=new TextAreaUpdateReportCallback(output,scrollPane);
         
         try {
             int ni = Integer.parseInt(numOfImmortals.getText());
 
-            List<Immortal> il = new LinkedList<Immortal>();
+            Queue<Immortal> il = new ConcurrentLinkedQueue<Immortal>();
 
             for (int i = 0; i < ni; i++) {
                 Immortal i1 = new Immortal("im" + i, il, DEFAULT_IMMORTAL_HEALTH, DEFAULT_DAMAGE_VALUE,ucb);

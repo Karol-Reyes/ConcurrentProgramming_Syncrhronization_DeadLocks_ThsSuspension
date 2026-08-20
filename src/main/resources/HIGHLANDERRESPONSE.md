@@ -7,8 +7,8 @@
 Como parte más importante de este código, tenemos:
 
 - N inmortales de la clase ```Immortal.java```, cada uno con su propio hilo
-- Cada hilo conoce a todos los demás porque todos están el la lista ```inmortalsPopulation```
-- en cada iteración, todos eligen a alguien aleatorio y pelea contra ese en ```figh()```
+- Cada hilo conoce a los demás mediante la población compartida ```immortalsPopulation```, que actualmente es una ```ConcurrentLinkedQueue```
+- en cada iteración, todos eligen a alguien aleatorio y pelea contra ese en ```fight()```
 - como los hilos corren siempre, no hay parada, osea, el huego nunca termina con solo 1 ganador, al final casi todos quedan en 0
 
 ## 2. Invariante Jugadores
@@ -127,15 +127,11 @@ Y también el el código [ControlFrame.java](../java/edu/eci/arsw/highlandersim/
     }
 ...
 ```
-Además de esas ideas, se realizó un ```synchronized()``` sobre los métodos: fight(), changeHealt() y getHealt().
-Esto con el fin de que, aunque se pausen los hilos antes de leer, la condición de carrera en fight() sigue ahí mientras el juego corre normalmente.
+Además de esas ideas, se sincronizaron los métodos ```changeHealth()``` y ```getHealth()```. La pelea no se sincroniza únicamente sobre ```this```, porque modifica la salud de dos inmortales. Por eso ```fight()``` usa dos locks anidados, adquiridos siempre en un orden global.
 
-Con la sincronización sobre ```this```, el ataque a un inmortal ahora será atómico frente a otros ataques al mismo objetivo.
+## 5. Problemas de la primera estrategia. ¿Invariante consistente?
 
-## 5. Funcionamiento Nuevo. ¿Invariante Consistente?
-
-No, el invariante **no se cumple de manera consistente**, y en algunos casos ni siquiera se puede llegar a verificar.
-Al hacer clic repetidamente en "Pause and check" observamos dos problemas importantes:
+Antes de aplicar el orden global de locks, el invariante **no se cumplía de manera consistente**, y en algunos casos ni siquiera se podía llegar a verificar. Al hacer clic repetidamente en "Pause and check" observamos dos problemas importantes:
 
 1. **El invariante se rompe incluso antes de pausar:** Revisando el log de peleas, se encuentran sumas inconsistentes entre líneas consecutivas — por ejemplo, en una ejecución con 3 inmortales (invariante esperado = 300), se observan estados como ```im0[70] + im1[120] + im2[100] = 290```, estancandose con el valor esperado. Esto ocurre porque ```fight()``` realiza una operación sobre el ```health``` de ambos participantes sin ninguna sincronización (primero puede ser uno u otr, no tienen orde), por lo que dos hilos pueden pelear contra el mismo inmortal (o pelear mutuamente) al mismo tiempo y pisarse las actualizaciones entre sí.
 
@@ -200,10 +196,26 @@ El archivo generado y leido con ayuda de una Inteligencia Artificial se revisó 
 
 Por lo tanto, en esta ejecución la aplicación nunca se bloqueó y el análisis con `jstack` confirmó lo observado visualmente. La IA ayudó a generar el archivo de volcado y a interpretar sus estados y mensajes, pero la evidencia corresponde a la ejecución real del programa y al resultado obtenido mediante `jps` y `jstack`.
 
-![alt text](/imagenes/100.png)
-
 ## 8. Corrección del problema identificado
 
 En la ejecución realizada no se presentó ningún deadlock ni bloqueo de la aplicación. El análisis del archivo generado con `jstack` confirmó que los hilos continuaban funcionando normalmente y que su estado `TIMED_WAITING` se debía únicamente al `Thread.sleep(1)` de la simulación.
 
 Por esta razón, en este punto no fue necesario aplicar una corrección adicional. La estrategia de adquirir los locks en un orden global ya estaba implementada y permitió que la simulación continuara ejecutándose sin una espera circular. Por el momento no se identificó ningún problema adicional que reparar.
+
+
+## 9. Pruebas
+
+
+![alt text](/imagenes/100.png)
+![alt text](/imagenes/1000.png)
+![alt text](/imagenes/10000.png)
+
+Todas funcionaron a la perfección, lo unico es que desde los 1000 inmortales comienza a consumir muchos recursos como memoria ram y CPU, sin embargo el programa nunca se bloquea
+
+## 10. Eliminación de inmortales muertos
+
+Cuando un inmortal llega a una salud de 0, deja de participar en la simulación. Su hilo verifica su propia salud al comenzar cada iteración y termina con `return` si está muerto. Además, cuando una pelea deja al contrincante en 0, este se elimina de la población compartida.
+
+Para evitar que los hilos vivos sigan seleccionando inmortales muertos, la población se cambió de `LinkedList` a `ConcurrentLinkedQueue`. Esta colección permite retirar elementos concurrentemente sin sincronizar manualmente toda la lista. Antes de seleccionar un contrincante, cada hilo obtiene una instantánea de los inmortales que siguen vivos en la cola; por eso un inmortal eliminado ya no vuelve a ser elegido.
+
+La pelea también vuelve a comprobar que tanto el atacante como el contrincante tengan salud mayor que 0. Esta segunda comprobación es necesaria porque un inmortal puede morir después de que otro hilo haya creado su instantánea de la población. De esta manera, los inmortales muertos dejan de golpear y los inmortales vivos no desperdician peleas contra ellos.
