@@ -144,6 +144,16 @@ public class ControlFrame extends JFrame {
 
         JButton btnStop = new JButton("STOP");
         btnStop.setForeground(Color.RED);
+        btnStop.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                if (immortals != null) {
+                    for (Immortal im : immortals) {
+                        im.stopImmortal();
+                    }
+                    output.append("Simulation stopped.\n");
+                }
+            }
+        });
         toolBar.add(btnStop);
 
         scrollPane = new JScrollPane();

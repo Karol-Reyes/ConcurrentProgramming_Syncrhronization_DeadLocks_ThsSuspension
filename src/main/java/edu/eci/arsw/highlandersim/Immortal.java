@@ -18,6 +18,7 @@ public class Immortal extends Thread {
     private final Object pause = new Object();
     private volatile boolean paused = false;
     private volatile boolean waiting = false;
+    private volatile boolean stopped = false;
 
     public Immortal(String name, Queue<Immortal> immortalsPopulation, int health,
             int defaultDamageValue, ImmortalUpdateReportCallback ucb) {
@@ -30,8 +31,12 @@ public class Immortal extends Thread {
     }
 
     public void run() {
-        while (true) {
+        while (!stopped) {
             checkPaused();
+
+            if (stopped) {
+                return;
+            }
 
             if (getHealth() <= 0) {
                 immortalsPopulation.remove(this);
@@ -91,6 +96,15 @@ public class Immortal extends Thread {
             paused = false;
             pause.notifyAll();
         }
+    }
+
+    public void stopImmortal() {
+        stopped = true;
+        synchronized (pause) {
+            paused = false;
+            pause.notifyAll();
+        }
+        interrupt();
     }
 
     public void fight(Immortal i2) {

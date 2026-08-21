@@ -219,3 +219,15 @@ Cuando un inmortal llega a una salud de 0, deja de participar en la simulación.
 Para evitar que los hilos vivos sigan seleccionando inmortales muertos, la población se cambió de `LinkedList` a `ConcurrentLinkedQueue`. Esta colección permite retirar elementos concurrentemente sin sincronizar manualmente toda la lista. Antes de seleccionar un contrincante, cada hilo obtiene una instantánea de los inmortales que siguen vivos en la cola; por eso un inmortal eliminado ya no vuelve a ser elegido.
 
 La pelea también vuelve a comprobar que tanto el atacante como el contrincante tengan salud mayor que 0. Esta segunda comprobación es necesaria porque un inmortal puede morir después de que otro hilo haya creado su instantánea de la población. De esta manera, los inmortales muertos dejan de golpear y los inmortales vivos no desperdician peleas contra ellos.
+
+Antes:
+![alt text](/imagenes/beforeKill.png)
+
+Despues:
+![alt text](/imagenes/afterKill.png)
+
+## 11. Función Stop
+
+La función `STOP` detiene la simulación de manera controlada. Para esto, cada inmortal tiene una bandera `stopped`. Al presionar el botón, se activa esta bandera en todos los inmortales, se despiertan los hilos que estén pausados mediante `notifyAll()` y se interrumpen los que estén durmiendo en `Thread.sleep(1)`.
+
+El ciclo principal de `Immortal` verifica la bandera y termina con `return`, por lo que los hilos dejan de ejecutar peleas. No se utiliza `Thread.stop()`, ya que esa operación es insegura: podría finalizar un hilo mientras mantiene un lock y dejar los datos compartidos en un estado inconsistente. Por tanto, `STOP` sí finaliza los hilos de la simulación, pero lo hace de forma segura y ordenada, sin matar forzosamente la máquina virtual ni la interfaz gráfica.
